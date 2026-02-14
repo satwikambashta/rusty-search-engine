@@ -7,21 +7,60 @@ use xml::reader::{XmlEvent, EventReader};
 use std::collections::HashMap;
 
 struct Lexer<'a> {
-    content: &'a [char],
+    _doc_content: &'a [char],
 }
 
 impl<'a> Lexer<'a> {
-    fn new(content: &'a [char]) -> Self {
-        Self {
-            content
+    fn new(_doc_content: &'a [char]) -> Self {
+        Self { _doc_content }
+    }
+
+    fn trim_left(&mut self) {
+        while self._doc_content.len() > 0 && self._doc_content[0].is_whitespace() {
+            self._doc_content = &self._doc_content[1..];
         }
+    }
+
+    fn next_token(&mut self) -> Option<&'a [char]> {
+        self.trim_left();
+        if self._doc_content.len() == 0 {
+            return None;
+        }
+
+       if self._doc_content[0].is_alphanumeric() {
+            let mut n = 0;
+            while n < self._doc_content.len() && self._doc_content[n].is_alphanumeric() {
+                n += 1;
+            }
+            let token = &self._doc_content[..n];
+            self._doc_content = &self._doc_content[n..];
+            return Some(token);
+        }
+
+        let token = &self._doc_content[..1];
+        self._doc_content = &self._doc_content[1..];
+        Some(token)
     }
 }
 
-fn index_document(_doc_content: &str) -> HashMap<String, usize> {
+impl<'a> Iterator for Lexer<'a> {
+    type Item = &'a [char];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_token()
+    }
+}
+
+fn index_document(_doc_content: &[char]) -> HashMap<String, usize> {
     let mut index = HashMap::new();
-    for word in _doc_content.split_whitespace() {
-        *index.entry(word.to_string()).or_insert(0) += 1;
+    let lexer = Lexer::new(_doc_content);
+    for token in lexer {
+        let word: String = token.iter().collect();
+        let word = word.to_lowercase();
+        //punctuation
+        if word.chars().all(|c| c.is_alphanumeric()) {
+            *index.entry(word).or_insert(0) += 1;
+        }
     }
     index
 }
@@ -36,44 +75,45 @@ fn parse_xml_file(file_path: &Path) -> io::Result<String> {
             eprintln!("Failed to read event: {err}");
             exit(1);
         });
-        if let XmlEvent::Characters(content) = event {
-            buffer.push_str(&content);
+        if let XmlEvent::Characters(_doc_content) = event {
+            buffer.push_str(&_doc_content);
+            buffer.push(' ');
         }
     }
 
-    let contents = fs::read_to_string(file_path).unwrap_or_else(|err| {
-        eprintln!("Failed to read file: {err}");
-        String::new()
-    });
     Ok(buffer)
 }
 
 fn main() -> io::Result<()> {
-    // let args: Vec<String> = env::args().collect();
-    // if args.len() < 2 {
-    //     eprintln!("Usage: {} <file_path>", args[0]);
-    //     exit(1);
-    // }
-    // let file_path = &args[1];
-    let content = parse_xml_file(Path::new("docs.gl/gl4/glMemoryBarrier.xhtml"))?.chars().collect::<Vec<_>>();
-    let lexer = Lexer::new(&content);
-    println!("{:?}", lexer.content);
-    // let mut all_documents = HashMap<Path, HashMap<String, usize>>::new();
-    // let directory_path = "docs.gl/gl4";
-    // for entry in fs::read_dir(directory_path)? {
-    //     let entry = entry?;
-    //     let path = entry.path();
+    let directory_path = "docs.gl/gl4";
+    let mut all_documents: HashMap<String, HashMap<String, usize>> = HashMap::new();
 
-    //     if path.is_file() {
-    //         match parse_xml_file(&path) {
-    //             Ok(buffer) => {
-    //                 println!("Content size: {} File: {}", buffer.len(), path.display());
-    //             },
-    //             Err(e) => {
-    //                 eprintln!("Failed to parse {}: {}", path.display(), e);
-    //             }
-    //         }
-    //     }
-    // }
+    for entry in fs::read_dir(directory_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            match parse_xml_file(&path) {
+                Ok(buffer) => {
+                    let _doc_content: Vec<char> = buffer.chars().collect();
+                    let index = index_document(&_doc_content);
+                    println!(
+                        "Indexed: {} ({} unique tokens, {} total chars)",
+                        path.display(),
+                        index.len(),
+                        _doc_content.len()
+                    );
+                    all_documents.insert(path.display().to_string(), index);
+                }
+                Err(e) => {
+                    eprintln!("Failed to parse {}: {}", path.display(), e);
+                }
+            }
+        }
+    }
+
+    println!("\n--- Summary ---");
+    println!("Total documents indexed: {}", all_documents.len());
+
     Ok(())
 }
