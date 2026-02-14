@@ -103,7 +103,15 @@ fn main() -> io::Result<()> {
                         index.len(),
                         _doc_content.len()
                     );
-                    all_documents.insert(path.display().to_string(), index);
+                    let mut top_tokens: Vec<(String, usize)> = index.into_iter().collect();
+                    top_tokens.sort_by(|a, b| b.1.cmp(&a.1));
+                    top_tokens.truncate(10);
+                    println!("  Top 10 Tokens:");
+                    for (token, count) in &top_tokens {
+                        println!("    {}->{}", token, count);
+                    }
+                    let top_index: HashMap<String, usize> = top_tokens.into_iter().collect();
+                    all_documents.insert(path.display().to_string(), top_index);
                 }
                 Err(e) => {
                     eprintln!("Failed to parse {}: {}", path.display(), e);
