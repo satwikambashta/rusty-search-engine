@@ -56,7 +56,7 @@ fn index_document(_doc_content: &[char]) -> HashMap<String, usize> {
     let lexer = Lexer::new(_doc_content);
     for token in lexer {
         let word: String = token.iter().collect();
-        let word = word.to_lowercase();
+        let word = word.to_uppercase();
         //punctuation
         if word.chars().all(|c| c.is_alphanumeric()) {
             *index.entry(word).or_insert(0) += 1;
@@ -86,13 +86,24 @@ fn parse_xml_file(file_path: &Path) -> io::Result<String> {
 
 fn main() -> io::Result<()> {
     let directory_path = "docs.gl/gl4";
-    let mut all_documents: HashMap<String, HashMap<String, usize>> = HashMap::new();
+    let mut all_documents: HashMap<String, HashMap<String, usize>> =
+        if let Ok(file) = fs::File::open("index.json") {
+            serde_json::from_reader(io::BufReader::new(file)).unwrap_or_else(|_| HashMap::new())
+        } else {
+            HashMap::new()
+        };
 
     for entry in fs::read_dir(directory_path)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_file() {
+            let path_str = path.display().to_string();
+            if all_documents.contains_key(&path_str) {
+                // println!("Skipping already indexed file: {}", path_str);
+                continue;
+            }
+
             match parse_xml_file(&path) {
                 Ok(buffer) => {
                     let _doc_content: Vec<char> = buffer.chars().collect();
@@ -106,12 +117,12 @@ fn main() -> io::Result<()> {
                     let mut top_tokens: Vec<(String, usize)> = index.into_iter().collect();
                     top_tokens.sort_by(|a, b| b.1.cmp(&a.1));
                     top_tokens.truncate(10);
-                    println!("  Top 10 Tokens:");
-                    for (token, count) in &top_tokens {
-                        println!("    {}->{}", token, count);
-                    }
+                    // println!("  Top 10 Tokens:");
+                    // for (token, count) in &top_tokens {
+                    //     println!("    {}->{}", token, count);
+                    // }
                     let top_index: HashMap<String, usize> = top_tokens.into_iter().collect();
-                    all_documents.insert(path.display().to_string(), top_index);
+                    all_documents.insert(path_str, top_index);
                 }
                 Err(e) => {
                     eprintln!("Failed to parse {}: {}", path.display(), e);
@@ -122,6 +133,10 @@ fn main() -> io::Result<()> {
 
     println!("\n--- Summary ---");
     println!("Total documents indexed: {}", all_documents.len());
+
+    let file = fs::File::create("index.json")?;
+    serde_json::to_writer_pretty(file, &all_documents)?;
+    println!("Index saved to index.json");
 
     Ok(())
 }
