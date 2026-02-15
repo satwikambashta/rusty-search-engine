@@ -13,6 +13,9 @@ pub fn index_document(content: &str) -> DocStats {
     let mut total_words = 0;
 
     for token in lexer {
+        if crate::stopwords::is_stopword(&token) {
+            continue;
+        }
         *tf.entry(token).or_insert(0) += 1;
         total_words += 1;
     }

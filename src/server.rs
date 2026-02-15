@@ -37,7 +37,9 @@ pub fn serve_files(index: Arc<InvertedIndex>) -> io::Result<()> {
                             let chars: Vec<char> = decoded.chars().collect();
                             let lexer = Lexer::new(&chars);
                             for token in lexer {
-                                search_terms.push(token);
+                                if !crate::stopwords::is_stopword(&token) {
+                                    search_terms.push(token);
+                                }
                             }
                         }
                     }

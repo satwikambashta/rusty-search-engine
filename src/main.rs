@@ -3,6 +3,7 @@ mod lexer;
 mod indexer;
 mod ranking;
 mod server;
+mod stopwords;
 
 use std::collections::HashMap;
 use std::env;
