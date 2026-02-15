@@ -176,7 +176,7 @@
 
             <!-- Results List -->
             <template x-for="result in results" :key="result[0]">
-                <a :href="'#'" class="result-card" @click.prevent="alert('File path: ' + result[0])">
+                <a :href="'/docs/' + result[0]" target="_blank" class="result-card">
                     <span class="result-path" x-text="result[0]"></span>
                     <div class="result-meta">
                         <span>Document Match</span>

@@ -193,7 +193,9 @@ fn serve_files(index: HashMap<String, HashMap<String, usize>>) -> io::Result<()>
                     }
                 }
                 if score > 0 {
-                    results.push((doc_path.clone(), score));
+                    // Normalize path
+                    let normalized_path = doc_path.replace('\\', "/");
+                    results.push((normalized_path, score));
                 }
             }
 
@@ -209,6 +211,37 @@ fn serve_files(index: HashMap<String, HashMap<String, usize>>) -> io::Result<()>
                 .with_header(Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap());
             
             request.respond(response)?;
+            continue;
+        }
+
+        // serve files
+        if url.starts_with("/docs/") {
+            let file_path_str = &url["/docs/".len()..];
+            let decoded_path = urlencoding::decode(file_path_str)
+                .unwrap_or_else(|_| file_path_str.to_string().into());
+            let file_path = Path::new(decoded_path.as_ref());
+
+            if file_path.exists() && file_path.is_file() {
+                match fs::read_to_string(file_path) {
+                    Ok(content) => {
+                        let content_type = if file_path.extension().map_or(false, |e| e == "xhtml") {
+                            "application/xhtml+xml"
+                        } else {
+                            "text/html"
+                        };
+                        let response = Response::from_string(content)
+                            .with_header(Header::from_bytes("Content-Type", content_type).unwrap());
+                        request.respond(response)?;
+                    }
+                    Err(_) => {
+                        let response = Response::from_string("Failed to read file").with_status_code(500);
+                        request.respond(response)?;
+                    }
+                }
+            } else {
+                let response = Response::from_string("File not found").with_status_code(404);
+                request.respond(response)?;
+            }
             continue;
         }
 
