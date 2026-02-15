@@ -4,150 +4,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Search Engine</title>
-    <!-- Alpine.js -->
+    <title>Rusty Search Engine</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #0f172a;
-            --container-bg: #1e293b;
-            --text-color: #f8fafc;
-            --accent-color: #38bdf8;
-            --accent-hover: #0ea5e9;
-            --border-color: #334155;
-            --input-bg: #0f172a;
+            --bg: #030712;
+            --glass: rgba(17, 24, 39, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --text-main: #f3f4f6;
+            --text-dim: #9ca3af;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
             margin: 0;
-            padding: 0;
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
         }
 
         .container {
             width: 90%;
-            max-width: 800px;
-            padding: 2rem;
-            margin-top: 5vh;
+            max-width: 900px;
+            padding: 4rem 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
         }
 
         h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 100%);
+            font-size: 4rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(to right, #60a5fa, #a855f7);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 3rem;
-            text-align: center;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.05em;
         }
 
-        .search-container {
+        .tagline {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .search-wrapper {
             position: relative;
             margin-bottom: 3rem;
+            perspective: 1000px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 1.25rem 1.5rem;
-            font-size: 1.25rem;
-            font-family: inherit;
-            background-color: var(--input-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            font-size: 1.5rem;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
             color: white;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            outline: none;
             box-sizing: border-box;
         }
 
         input[type="text"]:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2);
-            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 0 40px -10px var(--accent-glow);
+            transform: scale(1.02);
         }
 
-        /* Results Area */
-        .results-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        .results-list {
+            display: grid;
+            gap: 1.5rem;
         }
 
-        .result-card {
-            background-color: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
             padding: 1.5rem;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
             text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.01);
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(56, 189, 248, 0.05), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .card:hover::after {
+            transform: translateX(100%);
+        }
+
+        .doc-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
             display: block;
         }
 
-        .result-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            border-color: var(--accent-color);
-        }
-
-        .result-path {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--accent-color);
-            margin-bottom: 0.75rem;
-            word-break: break-all;
-            display: block;
-        }
-
-        .result-meta {
-            font-size: 0.9rem;
-            color: #94a3b8;
+        .doc-meta {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-dim);
         }
 
-        .relevance-badge {
+        .score-pill {
             background: rgba(56, 189, 248, 0.1);
-            color: var(--accent-color);
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 0.85rem;
+            color: var(--accent);
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-weight: 800;
+            border: 1px solid rgba(56, 189, 248, 0.2);
         }
 
-        /* Loading & Empty States */
-        .status-message {
+        .status {
             text-align: center;
-            color: #64748b;
-            margin-top: 2rem;
-            font-size: 1.1rem;
+            padding: 3rem;
+            color: var(--text-dim);
+            font-size: 1.2rem;
         }
 
-        .loading-pulse {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid var(--accent-color);
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--accent);
             border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
-            margin-right: 0.5rem;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
         }
 
-        @keyframes spin {
-            to {
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
                 transform: rotate(360deg);
             }
         }
@@ -159,41 +188,51 @@
 </head>
 
 <body>
-
     <div class="container" x-data="searchApp()">
-        <h1>Search Engine</h1>
+        <header class="header">
+            <h1>Rusty Search Engine</h1>
+            <p class="tagline">Neural-Grade Search for Your Local Docs</p>
+        </header>
 
-        <div class="search-container">
+        <div class="search-wrapper">
             <input type="text" x-model="query" @input.debounce.300ms="performSearch()"
-                placeholder="Search defs (e.g., 'BUFFER', 'TEXTURE')..." autofocus>
+                placeholder="Query documentation..." autofocus>
         </div>
 
-        <div class="results-container">
-            <!-- Loading State -->
-            <div x-show="loading" class="status-message" x-cloak>
-                <div class="loading-pulse"></div> Searching...
-            </div>
+        <div class="results-list">
+            <template x-if="loading">
+                <div class="status">
+                    <span class="loader"></span>
+                    <p>Analyzing Corpus...</p>
+                </div>
+            </template>
 
-            <!-- Results List -->
             <template x-for="result in results" :key="result[0]">
-                <a :href="'/docs/' + result[0]" target="_blank" class="result-card">
-                    <span class="result-path" x-text="result[0]"></span>
-                    <div class="result-meta">
-                        <span>Document Match</span>
-                        <span class="relevance-badge" x-text="'Score: ' + result[1]"></span>
+                <a :href="'/docs/' + result[0]" target="_blank" class="card">
+                    <span class="doc-name" x-text="result[0].split('/').pop()"></span>
+                    <span class="doc-path"
+                        style="font-size: 0.8rem; color: #6b7280; display: block; margin-bottom: 0.5rem;"
+                        x-text="result[0]"></span>
+                    <p class="snippet" style="font-size: 0.95rem; color: #d1d5db; margin: 0 0 1rem 0; line-height: 1.5;"
+                        x-text="result[2]"></p>
+                    <div class="doc-meta">
+                        <span>Relevance Match</span>
+                        <span class="score-pill" x-text="result[1].toFixed(4)"></span>
                     </div>
                 </a>
             </template>
 
-            <!-- Empty State -->
-            <div x-show="!loading && query.length > 0 && results.length === 0" class="status-message" x-cloak>
-                No documents found for "<span x-text="query" style="color: var(--text-color)"></span>"
-            </div>
+            <template x-if="!loading && query.length > 0 && results.length === 0">
+                <div class="status">
+                    <p>No matches found for "<span x-text="query" style="color: white"></span>"</p>
+                </div>
+            </template>
 
-            <!-- Default State -->
-            <div x-show="!loading && query.length === 0" class="status-message" x-cloak>
-                Type to start searching...
-            </div>
+            <template x-if="!loading && query.length === 0">
+                <div class="status">
+                    <p>Enter a query to explore your index</p>
+                </div>
+            </template>
         </div>
     </div>
 
@@ -205,7 +244,7 @@
                 loading: false,
 
                 async performSearch() {
-                    if (this.query.trim() === '') {
+                    if (this.query.trim().length < 2) {
                         this.results = [];
                         return;
                     }
@@ -213,16 +252,12 @@
                     this.loading = true;
                     try {
                         const q = encodeURIComponent(this.query);
-                        // Using port 6969 as requested
-                        const response = await fetch(`http://localhost:6969/api/search?q=${q}`);
+                        const response = await fetch(`/api/search?q=${q}`);
                         if (response.ok) {
                             this.results = await response.json();
-                        } else {
-                            console.error('Search failed');
                         }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        this.results = [];
+                    } catch (e) {
+                        console.error('Search error:', e);
                     } finally {
                         this.loading = false;
                     }
